@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Radhika Tunes</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding-bottom: 140px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      padding: 15px 20px;
+      background: linear-gradient(45deg, #ff0080, #7928ca);
+      color: #fff;
+      font-size: 1.5em;
+      font-weight: bold;
+    }
+    header img {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    .toolbar {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .toolbar button {
+      margin: 6px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background: linear-gradient(to right, #ff512f, #dd2476);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff0080;
+    }
+    .toolbar button.active {
+      box-shadow: 0 0 15px #ff00ff;
+      transform: scale(1.05);
+    }
+    .section-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin: 10px 20px;
+      color: #ff00ff;
+    }
+    .carousel, .scroll-list {
+      display: flex;
+      overflow-x: auto;
+      padding: 10px;
+      gap: 15px;
+      scroll-behavior: smooth;
+    }
+    .carousel::-webkit-scrollbar, .scroll-list::-webkit-scrollbar {
+      display: none;
+    }
+    .card {
+      background: #111;
+      border-radius: 12px;
+      width: 220px;
+      flex-shrink: 0;
+      box-shadow: 0 0 15px #ff00ff;
+      padding: 10px;
+      text-align: center;
+    }
+    .card img {
+      width: 100%;
+      border-radius: 10px;
+      loading: lazy;
+    }
+    .card h4 {
+      margin: 10px 0 5px;
+    }
+    .card p {
+      margin: 0;
+      color: #aaa;
+    }
+    .play-button {
+      margin: 10px 5px 0;
+      background: linear-gradient(135deg, #00ffff, #ff00ff);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 0 10px #0ff, 0 0 20px #f0f;
+    }
+    .stop-button {
+      background: linear-gradient(135deg, #ff3300, #ff00ff);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #f0f, 0 0 20px #f00;
+      margin: 10px 5px 0;
+    }
+    .player-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #111;
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      gap: 12px;
+      z-index: 1000;
+      border-top: 2px solid #ff00ff;
+    }
+    .player-bar img {
+      width: 45px;
+      height: 45px;
+      border-radius: 8px;
+    }
+    .song-info {
+      flex-grow: 1;
+    }
+    #ytplayer {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: 240px;
+      max-height: 40vh;
+      border: none;
+      margin: 0 auto;
+      margin-top: 10px;
+      box-shadow: 0 0 15px #ff00ff;
+    }
+    .error-message {
+      color: #ff4444;
+      text-align: center;
+      margin: 10px 0;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="https://i.ibb.co/1GNnGfX8/temp.jpg" alt="Owner" />
+  Radhika Tunes
+</header>
+
+<a href="https://t.me/RadhikaTunes" target="_blank" style="display:block;text-align:center;margin:15px;">
+  <button style="background:linear-gradient(135deg,#0088cc,#004466);color:#fff;padding:8px 16px;border:none;border-radius:8px;cursor:pointer;">
+    📢 Join Our Telegram Channel
+  </button>
+</a>
+
+<audio id="bgMusic" src="https://files.catbox.moe/vy0jhr.mp3" autoplay loop hidden></audio>
+
+<div id="ytplayer"></div>
+<p id="errorMessage" class="error-message">Failed to load video. Please try another song.</p>
+
+<div class="toolbar">
+  <button onclick="filterCategory('all')" aria-label="Show all songs">🌟 All</button>
+  <button onclick="filterCategory('devotional')" aria-label="Show devotional songs">🕉️ Devotional</button>
+  <button onclick="filterCategory('bollywood')" aria-label="Show Bollywood songs">🎬 Bollywood</button>
+</div>
+
+<!-- Devotional Section -->
+<div class="section-title">Devotional Songs</div>
+<div class="carousel" id="devotionalCarousel"></div>
+<div class="scroll-list" id="devotionalList"></div>
+
+<!-- Bollywood Section -->
+<div class="section-title">Bollywood Songs</div>
+<div class="scroll-list" id="bollywoodList"></div>
+
+<div class="player-bar" id="playerBar" style="display:none;">
+  <img id="playerThumb" src="" alt="thumb" />
+  <div class="song-info">
+    <strong id="playerTitle">Now Playing</strong><br>
+    <small id="timer">0:00</small><br>
+    <p id="playerLyrics" style="color: #aaa; font-size: 0.9em; margin-top: 5px;"></p>
+  </div>
+  <input type="range" id="volumeSlider" min="0" max="100" value="100" onchange="setVolume(this.value)" aria-label="Volume control">
+  <button class="stop-button" onclick="stopPlayback()" aria-label="Stop playback">⏹ Stop</button>
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  const songs = [
+    { id: "BhwOproElxU", title: "Om Jai Shiv Omkara", artist: "Anuradha Paudwal", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "54wF5mXTPJw", title: "Lagan Tumse Laga Bethe Hai", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "dx4Teh-nv3A", title: "Namo Namo", artist: "Amit Trivedi", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "3-zDYh7zYIU", title: "Shiv Bhajan", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "ZkKStVgGEJY", title: "Ram Bhajan", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "3ucCEjXS9n8", title: "Om Jai Jagdish Hare", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "qQKiEFaIsqo", title: "Shiv Bhajan 2024", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "4DkNCgUXbig", title: "Parvati Boli Shankar Se", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "mowxFsXgeK0", title: "Hanumat Ki Chaya", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "UmBqTzvOVc0", title: "Sanso Ki Mala Pe Simru", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "f18cpg-mTrY", title: "Shri Krishna Govind", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "UrKTU2PJpmg", title: "Kanha Kanha", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "ioavJ6DdCt8", title: "Tere Hawaale Kanhaiya", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "1JKuv-OWpM8", title: "Achyutam Keshavam", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "tBgNpc39FJk", title: "Adhram Madhuram", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "13cHnQ1Suj8", title: "Radhe Radhe", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "obl_mT6M5Jw", title: "Krishna Janmashtami", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "1qmPNot9NJs", title: "Shri Krishna Govind", artist: "Jubin Nautiyal", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "05xZEReqo1w", title: "O Kanha Ab To Murli", artist: "Unknown", category: "devotional", lyrics: "Lyrics not added yet..." },
+    { id: "sUf2PtEZris", title: "Bollywood Song 1", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "N4wK3NtVRT0", title: "Bollywood Song 2", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "6StIp8qXYJ8", title: "Bollywood Song 3", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "g29SYU09kj0", title: "Bollywood Song 4", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "3pYKz7Ex-28", title: "Bollywood Song 5", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "knGCfzm4jWs", title: "Bollywood Song 6", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "Qo4IOTAbGAM", title: "Bollywood Song 7", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "usVq_4K_m_w", title: "Bollywood Song 8", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "WpBn9w-Js_c", title: "Bollywood Song 9", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "8of5w7RgcTc", title: "Bollywood Song 10", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "KGn-erOG-Bs", title: "Bollywood Song 11", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "9l5QY7BJmHQ", title: "Bollywood Song 12", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "k6q4lENp434", title: "Bollywood Song 13", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "b2uUCRkQTyk", title: "Bollywood Song 14", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "nq2i2VyrF2c", title: "Bollywood Song 15", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "ge_UgErt4yo", title: "Bollywood Song 16", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "QPSAjqjylTc", title: "Bollywood Song 17", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "tYKrORILFOg", title: "Bollywood Song 18", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "IjJ7_pckVK8", title: "Bollywood Song 19", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "i9gRDqCXJuQ", title: "Bollywood Song 20", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." },
+    { id: "0KNk-Joi-NM", title: "Bollywood Song 21", artist: "Unknown", category: "bollywood", lyrics: "Lyrics not added yet..." }
+  ];
+
+  const devotionalCarousel = document.getElementById("devotionalCarousel");
+  const devotionalList = document.getElementById("devotionalList");
+  const bollywoodList = document.getElementById("bollywoodList");
+  const errorMessage = document.getElementById("errorMessage");
+
+  let player;
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('ytplayer', {
+      height: '240',
+      width: '100%',
+      playerVars: {
+        'autoplay': 1,
+        'playsinline': 1
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onError': onPlayerError
+      }
+    });
+  }
+
+  function onPlayerReady(event) {
+    event.target.setVolume(100);
+  }
+
+  function onPlayerError(event) {
+    errorMessage.style.display = 'block';
+    setTimeout(() => {
+      errorMessage.style.display = 'none';
+    }, 5000);
+  }
+
+  function renderSongs(category = 'all') {
+    devotionalCarousel.innerHTML = '';
+    devotionalList.innerHTML = '';
+    bollywoodList.innerHTML = '';
+
+    // Filter Devotional songs
+    const devotionalSongs = songs.filter(song => song.category === 'devotional');
+    const carouselSongs = devotionalSongs.slice(0, 5); // First 5 for carousel
+    carouselSongs.forEach(song => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('data-category', song.category);
+      card.innerHTML = `
+        <img src="https://i.ytimg.com/vi/${song.id}/hqdefault.jpg" alt="${song.title}" loading="lazy">
+        <h4>${song.title}</h4>
+        <p>${song.artist}</p>
+        ${currentVideoId === song.id ?
+          `<button class="stop-button" onclick="stopPlayback()" aria-label="Stop ${song.title}">⏹ Stop</button>` :
+          `<button class="play-button" onclick="playSong('${song.id}', '${song.title}', 'https://i.ytimg.com/vi/${song.id}/hqdefault.jpg')" aria-label="Play ${song.title}">▶ Play</button>`}
+      `;
+      devotionalCarousel.appendChild(card);
+    });
+    devotionalSongs.forEach(song => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('data-category', song.category);
+      card.innerHTML = `
+        <img src="https://i.ytimg.com/vi/${song.id}/hqdefault.jpg" alt="${song.title}" loading="lazy">
+        <h4>${song.title}</h4>
+        <p>${song.artist}</p>
+        ${currentVideoId === song.id ?
+          `<button class="stop-button" onclick="stopPlayback()" aria-label="Stop ${song.title}">⏹ Stop</button>` :
+          `<button class="play-button" onclick="playSong('${song.id}', '${song.title}', 'https://i.ytimg.com/vi/${song.id}/hqdefault.jpg')" aria-label="Play ${song.title}">▶ Play</button>`}
+      `;
+      devotionalList.appendChild(card);
+    });
+
+    // Filter Bollywood songs
+    const bollywoodSongs = songs.filter(song => song.category === 'bollywood');
+    bollywoodSongs.forEach(song => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('data-category', song.category);
+      card.innerHTML = `
+        <img src="https://i.ytimg.com/vi/${song.id}/hqdefault.jpg" alt="${song.title}" loading="lazy">
+        <h4>${song.title}</h4>
+        <p>${song.artist}</p>
+        ${currentVideoId === song.id ?
+          `<button class="stop-button" onclick="stopPlayback()" aria-label="Stop ${song.title}">⏹ Stop</button>` :
+          `<button class="play-button" onclick="playSong('${song.id}', '${song.title}', 'https://i.ytimg.com/vi/${song.id}/hqdefault.jpg')" aria-label="Play ${song.title}">▶ Play</button>`}
+      `;
+      bollywoodList.appendChild(card);
+    });
+
+    // Highlight active filter button
+    document.querySelectorAll('.toolbar button').forEach(btn => btn.classList.remove('active'));
+    if (category !== 'all') {
+      document.querySelector(`.toolbar button[onclick="filterCategory('${category}')"]`).classList.add('active');
+    }
+  }
+
+  let currentVideoId = null;
+  let timerInterval = null;
+  let elapsed = 0;
+
+  function playSong(videoId, title, thumb) {
+    const bgMusic = document.getElementById("bgMusic");
+    bgMusic.pause();
+    errorMessage.style.display = 'none';
+    currentVideoId = videoId;
+    player.loadVideoById({
+      videoId: videoId,
+      startSeconds: 0,
+      suggestedQuality: 'default'
+    });
+    document.getElementById("playerTitle").textContent = title;
+    document.getElementById("playerThumb").src = thumb;
+    document.getElementById("playerBar").style.display = "flex";
+    const song = songs.find(s => s.id === videoId);
+    document.getElementById("playerLyrics").textContent = song ? song.lyrics : "Lyrics not available";
+    renderSongs(document.querySelector('.toolbar button.active')?.dataset?.category || 'all');
+
+    clearInterval(timerInterval);
+    elapsed = 0;
+    timerInterval = setInterval(() => {
+      if (player && player.getCurrentTime) {
+        elapsed = Math.floor(player.getCurrentTime());
+      } else {
+        elapsed++;
+      }
+      const minutes = Math.floor(elapsed / 60);
+      const seconds = elapsed % 60;
+      document.getElementById("timer").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  function stopPlayback() {
+    const bgMusic = document.getElementById("bgMusic");
+    if (player && player.stopVideo) {
+      player.stopVideo();
+    }
+    bgMusic.play();
+    currentVideoId = null;
+    document.getElementById("playerBar").style.display = "none";
+    clearInterval(timerInterval);
+    document.getElementById("timer").textContent = "0:00";
+    document.getElementById("playerLyrics").textContent = "";
+    renderSongs(document.querySelector('.toolbar button.active')?.dataset?.category || 'all');
+  }
+
+  function setVolume(val) {
+    const bgMusic = document.getElementById("bgMusic");
+    bgMusic.volume = val / 100;
+    if (player && player.setVolume) {
+      player.setVolume(val);
+    }
+  }
+
+  function filterCategory(cat) {
+    renderSongs(cat);
+  }
+
+  renderSongs();
+</script>
+
+</body>
+</html>
